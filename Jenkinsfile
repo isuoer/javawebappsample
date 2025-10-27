@@ -26,21 +26,17 @@ node {
         sh '''
             az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_TENANT_ID
             az account set -s $AZURE_SUBSCRIPTION_ID
+            
+            # 重命名 WAR 文件为 ROOT.war
+            cp target/calculator-1.0.war target/ROOT.war
+            
+            # 部署重命名后的 WAR 文件
+            az webapp deploy --resource-group jenkins-get-started-rg --name xinran-jenkins-webapp-2025 --src-path target/ROOT.war --type war
+            
+            echo "部署完成，等待应用启动..."
+            sleep 60
         '''
+      }
     }
-    
-    // 获取 FTP 发布配置文件
-    def pubProfilesJson = sh script: "az webapp deployment list-publishing-profiles -g $resourceGroup -n $webAppName --xml", returnStdout: true
-    
-    // 解析 XML 获取 FTP 信息（需要安装 xml2 或使用其他方法解析）
-    def ftpUrl = sh script: "echo '$pubProfilesJson' | grep -oP 'publishUrl=\"\\K[^\"]+' | head -1", returnStdout: true
-    def ftpUser = sh script: "echo '$pubProfilesJson' | grep -oP 'userName=\"\\K[^\"]+' | head -1", returnStdout: true
-    def ftpPass = sh script: "echo '$pubProfilesJson' | grep -oP 'userPWD=\"\\K[^\"]+' | head -1", returnStdout: true
-    
-    // 使用 FTP 上传
-    sh """
-        curl -T target/calculator-1.0.war "ftp://$ftpUrl/site/wwwroot/webapps/ROOT.war" --user "$ftpUser:$ftpPass"
-    """
-}
   }
 }
