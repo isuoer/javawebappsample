@@ -9,8 +9,17 @@ def getFtpPublishProfile(def publishProfilesJson) {
 
 node {
   withEnv(['AZURE_SUBSCRIPTION_ID=8a72ad35-4b45-4b2a-bf3f-e4f7cfe21521',
-        'AZURE_TENANT_ID=43b0ff79-3f17-4ad2-9fb1-593cd0fa446b',
-        'PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/snap/bin']) {  // 添加 PATH 环境变量
+        'AZURE_TENANT_ID=43b0ff79-3f17-4ad2-9fb1-593cd0fa446b']) {
+    
+    stage('verify azure cli') {
+      // 验证 Azure CLI 是否可用
+      sh '''
+        echo "=== 验证 Azure CLI ==="
+        /usr/bin/az --version
+        echo "=== Azure CLI 验证完成 ==="
+      '''
+    }
+  
     stage('init') {
       checkout scm
     }
@@ -22,22 +31,24 @@ node {
     stage('deploy') {
       def resourceGroup = 'jenkins-get-started-rg'
       def webAppName = 'xinran-jenkins-webapp-2025'
-      // login Azure
+      
+      // login Azure - 使用绝对路径
       withCredentials([usernamePassword(credentialsId: 'AzureServicePrincipal', passwordVariable: 'AZURE_CLIENT_SECRET', usernameVariable: 'AZURE_CLIENT_ID')]) {
        sh '''
-          which az || echo "az command not found"  // 调试命令
-          az --version || echo "az version check failed"  // 调试命令
-          az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_TENANT_ID
-          az account set -s $AZURE_SUBSCRIPTION_ID
+          /usr/bin/az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_TENANT_ID
+          /usr/bin/az account set -s $AZURE_SUBSCRIPTION_ID
         '''
       }
-      // get publish settings
-      def pubProfilesJson = sh script: "az webapp deployment list-publishing-profiles -g $resourceGroup -n $webAppName", returnStdout: true
+      
+      // get publish settings - 使用绝对路径
+      def pubProfilesJson = sh script: "/usr/bin/az webapp deployment list-publishing-profiles -g $resourceGroup -n $webAppName", returnStdout: true
       def ftpProfile = getFtpPublishProfile pubProfilesJson
+      
       // upload package
       sh "curl -T target/calculator-1.0.war $ftpProfile.url/webapps/ROOT.war -u '$ftpProfile.username:$ftpProfile.password'"
-      // log out
-      sh 'az logout'
+      
+      // log out - 使用绝对路径
+      sh '/usr/bin/az logout'
     }
   }
 }
