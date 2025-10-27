@@ -9,7 +9,8 @@ def getFtpPublishProfile(def publishProfilesJson) {
 
 node {
   withEnv(['AZURE_SUBSCRIPTION_ID=8a72ad35-4b45-4b2a-bf3f-e4f7cfe21521',
-        'AZURE_TENANT_ID=43b0ff79-3f17-4ad2-9fb1-593cd0fa446b']) {
+        'AZURE_TENANT_ID=43b0ff79-3f17-4ad2-9fb1-593cd0fa446b',
+        'PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/snap/bin']) {  // 添加 PATH 环境变量
     stage('init') {
       checkout scm
     }
@@ -24,6 +25,8 @@ node {
       // login Azure
       withCredentials([usernamePassword(credentialsId: 'AzureServicePrincipal', passwordVariable: 'AZURE_CLIENT_SECRET', usernameVariable: 'AZURE_CLIENT_ID')]) {
        sh '''
+          which az || echo "az command not found"  // 调试命令
+          az --version || echo "az version check failed"  // 调试命令
           az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_TENANT_ID
           az account set -s $AZURE_SUBSCRIPTION_ID
         '''
