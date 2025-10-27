@@ -11,12 +11,13 @@ node {
   withEnv(['AZURE_SUBSCRIPTION_ID=8a72ad35-4b45-4b2a-bf3f-e4f7cfe21521',
         'AZURE_TENANT_ID=43b0ff79-3f17-4ad2-9fb1-593cd0fa446b']) {
     
-    stage('verify azure cli') {
-      // 验证 Azure CLI 是否可用
+    stage('setup azure cli') {
+      // 使用官方的一键安装脚本
       sh '''
-        echo "=== 验证 Azure CLI ==="
-        /usr/bin/az --version
-        echo "=== Azure CLI 验证完成 ==="
+        echo "正在安装 Azure CLI..."
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        echo "安装完成，验证版本："
+        az --version
       '''
     }
   
@@ -32,23 +33,19 @@ node {
       def resourceGroup = 'jenkins-get-started-rg'
       def webAppName = 'xinran-jenkins-webapp-2025'
       
-      // login Azure - 使用绝对路径
       withCredentials([usernamePassword(credentialsId: 'AzureServicePrincipal', passwordVariable: 'AZURE_CLIENT_SECRET', usernameVariable: 'AZURE_CLIENT_ID')]) {
        sh '''
-          /usr/bin/az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_TENANT_ID
-          /usr/bin/az account set -s $AZURE_SUBSCRIPTION_ID
+          az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_TENANT_ID
+          az account set -s $AZURE_SUBSCRIPTION_ID
         '''
       }
       
-      // get publish settings - 使用绝对路径
-      def pubProfilesJson = sh script: "/usr/bin/az webapp deployment list-publishing-profiles -g $resourceGroup -n $webAppName", returnStdout: true
+      def pubProfilesJson = sh script: "az webapp deployment list-publishing-profiles -g $resourceGroup -n $webAppName", returnStdout: true
       def ftpProfile = getFtpPublishProfile pubProfilesJson
       
-      // upload package
       sh "curl -T target/calculator-1.0.war $ftpProfile.url/webapps/ROOT.war -u '$ftpProfile.username:$ftpProfile.password'"
       
-      // log out - 使用绝对路径
-      sh '/usr/bin/az logout'
+      sh 'az logout'
     }
   }
 }
