@@ -34,8 +34,12 @@ node {
             az webapp restart --name xinran-jenkins-webapp-2025 --resource-group jenkins-get-started-rg
             sleep 30
             
-            # 部署为 ROOT.war
-            az webapp deploy --resource-group jenkins-get-started-rg --name xinran-jenkins-webapp-2025 --src-path target/calculator-1.0.war --type war --target-path ROOT.war
+            # 检查构建生成的文件
+            echo "=== 检查构建产物 ==="
+            ls -la target/
+            
+            # 部署正确的 WAR 文件 (ROOT.war)
+            az webapp deploy --resource-group jenkins-get-started-rg --name xinran-jenkins-webapp-2025 --src-path target/ROOT.war --type war --target-path ROOT.war
             
             echo "部署完成，等待应用启动..."
             sleep 90
