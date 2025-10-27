@@ -48,22 +48,20 @@ node {
 }
 
 stage('verify') {
-    steps {
-        sh '''
-            echo "=== 测试应用 ==="
-            # 等待应用完全启动
-            sleep 60
-            
-            # 测试应用
-            curl -f -v "http://xinran-jenkins-webapp-2025.azurewebsites.net/api/calculator/ping" || echo "第一次尝试失败，等待重试..."
-            
-            # 如果第一次失败，等待更长时间再试
-            sleep 30
-            curl -f -v "http://xinran-jenkins-webapp-2025.azurewebsites.net/api/calculator/ping" || echo "应用仍然没有响应"
-            
-            echo "=== 测试完成 ==="
-        '''
-    }
+    sh '''
+        echo "=== 测试应用 ==="
+        # 等待应用完全启动
+        sleep 60
+        
+        # 测试应用
+        curl -f -v "http://xinran-jenkins-webapp-2025.azurewebsites.net/api/calculator/ping" || echo "第一次尝试失败，等待重试..."
+        
+        # 如果第一次失败，等待更长时间再试
+        sleep 30
+        curl -f -v "http://xinran-jenkins-webapp-2025.azurewebsites.net/api/calculator/ping" || echo "应用仍然没有响应"
+        
+        echo "=== 测试完成 ==="
+    '''
 }
   }
 }
