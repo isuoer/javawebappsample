@@ -27,11 +27,37 @@ node {
             az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_TENANT_ID
             az account set -s $AZURE_SUBSCRIPTION_ID
             
-            # 现在部署 ROOT.war（Maven 生成的文件名）
-            az webapp deploy --resource-group jenkins-get-started-rg --name xinran-jenkins-webapp-2025 --src-path target/ROOT.war --type war
+            # 确保使用正确的 Java 配置
+            az webapp config set --name xinran-jenkins-webapp-2025 --resource-group jenkins-get-started-rg --java-version 11 --java-container Tomcat --java-container-version 9.0
+            
+            # 重启应用清除旧部署
+            az webapp restart --name xinran-jenkins-webapp-2025 --resource-group jenkins-get-started-rg
+            sleep 30
+            
+            # 部署为 ROOT.war
+            az webapp deploy --resource-group jenkins-get-started-rg --name xinran-jenkins-webapp-2025 --src-path target/calculator-1.0.war --type war --target-path ROOT.war
             
             echo "部署完成，等待应用启动..."
+            sleep 90
+        '''
+    }
+}
+
+stage('verify') {
+    steps {
+        sh '''
+            echo "=== 测试应用 ==="
+            # 等待应用完全启动
             sleep 60
+            
+            # 测试应用
+            curl -f -v "http://xinran-jenkins-webapp-2025.azurewebsites.net/api/calculator/ping" || echo "第一次尝试失败，等待重试..."
+            
+            # 如果第一次失败，等待更长时间再试
+            sleep 30
+            curl -f -v "http://xinran-jenkins-webapp-2025.azurewebsites.net/api/calculator/ping" || echo "应用仍然没有响应"
+            
+            echo "=== 测试完成 ==="
         '''
     }
 }
